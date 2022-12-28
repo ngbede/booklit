@@ -15,7 +15,7 @@ interface Database {
 }
 
 export const params = {
-  user: process.env.USER,
+  user: process.env.DBUSER,
   host: process.env.HOST,
   database: process.env.DATABASE,
   password: process.env.PASSWORD,
