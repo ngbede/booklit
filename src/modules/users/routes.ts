@@ -8,25 +8,21 @@ const schema = {
   body: userSchema
 }
 
-interface UserType {
-  email: string
-  password: string
-  phoneNumber: string
-  metadata: Object | undefined
-}
-
 const userRoute = async (fastify: FastifyInstance, options: Object) => {
   fastify.post(`${baseUrl}/user/signup`, { schema }, async (request, reply) => {
-    const { email, password, metadata } = request.body as UserType
-    const supabase = new AuthUser(supabaseAdmin, reply)
-    const user = await supabase.createUser(email, password, metadata)
+    const {
+      email,
+      password
+    } = request.body as any
+    const authApi = new AuthUser(supabaseAdmin, reply)
+    const user = await authApi.createUser(email, password, request.body)
     return reply.status(200).send(user)
   })
 
   fastify.post(`${baseUrl}/user/login`, { schema }, async (request, reply) => {
-    const { email, password } = request.body as UserType
-    const supabase = new AuthUser(supabaseAdmin, reply)
-    const user = await supabase.loginUser(email, password)
+    const { email, password } = request.body as any
+    const authApi = new AuthUser(supabaseAdmin, reply)
+    const user = await authApi.loginUser(email, password)
     return reply.status(200).send(user)
   })
 

@@ -1,3 +1,4 @@
+import { user } from '@prisma/client'
 import { SupabaseClient, User, AuthApiError, AuthError, Session } from '@supabase/supabase-js'
 import { FastifyReply } from 'fastify'
 import DBAdapter from '../../api/db-adapter'
@@ -20,9 +21,8 @@ export default class AuthUser {
     this.reply = reply
     this.dbAdapter = new DBAdapter(
       pgInstance,
-      'users',
-      reply,
-      'user'
+      'user',
+      reply
     )
   }
 
@@ -47,15 +47,22 @@ export default class AuthUser {
     return this._requestHandle(data.users, error)
   }
 
-  async createUser(email: string, password: string, userData: Object | undefined) {
+  async createUser(email: string, password: string, userData: any | undefined) {
     const { data, error } = await this.supabase.auth.admin.createUser({
       email,
       password
     })
     if (error) return this._requestHandle(data.user, error)
-
+    const newUser = await this.dbAdapter.create<user>({
+      auth_id: data.user.id,
+      email: userData.email,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      display_name: userData.displayName,
+      phone_number: userData.phoneNumber
+    })
     const { data: magicLinkData } = await this.createMagicLink(email, password, EmailLinkTypes.signup)
-    const resData = Object.assign(data.user!, { ...magicLinkData.properties })
+    const resData = Object.assign(data.user!, { ...magicLinkData.properties, user_detail: { ...newUser } })
     return this._requestHandle(resData, error)
   }
 

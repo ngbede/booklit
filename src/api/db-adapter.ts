@@ -1,6 +1,6 @@
 import { SupabaseClient, PostgrestError } from '@supabase/supabase-js'
 import { FastifyReply } from 'fastify'
-import { supabaseAdmin, supabase } from '../db/config'
+import { supabaseAdmin } from '../db/config'
 import Pg from '../db/pg'
 
 export default class DBAdapter {
@@ -14,14 +14,14 @@ export default class DBAdapter {
     this.pg = pg
     this.tableName = tableName
     this.nameSpace = nameSpace || this.tableName
-    this.supabase = this.nameSpace === 'user' ? supabaseAdmin : supabase
+    this.supabase = supabaseAdmin
     this.reply = reply
   }
 
-  private _requestHandle(data: any | null, error: PostgrestError | null) {
+  private _requestHandle<T>(data: T | T[] | null, error: PostgrestError | null) {
     if (error) {
-      console.error(error)
-      return this.reply.status(400).send({
+      this.reply.log.error(error)
+      return this.reply.status(500).send({
         error: error.message || 'Internal Server Error'
       })
     }
@@ -35,11 +35,11 @@ export default class DBAdapter {
     return this._requestHandle(data, error)
   }
 
-  async create(payload: Object | Object[]) {
+  async create<T>(payload: Object | Object[]): Promise<T | T[] | null> {
     const { data, error } = await this.supabase.from(this.tableName)
       .insert(payload)
       .select('*')
-    return this._requestHandle(data, error)
+    return this._requestHandle<T>(data, error)
   }
 
   async update(payload: Object, targetColumn: string, id: string) {
@@ -62,7 +62,7 @@ export default class DBAdapter {
       const data = await this.pg.query<T>(queryString, queryParams)
       return data
     } catch (error) {
-      console.error(error)
+      this.reply.log.error(error)
       // TODO: err handle
     }
   }
